@@ -1,0 +1,81 @@
+#define BLYNK_TEMPLATE_ID "TMPL3TXwFi_t6"
+#define BLYNK_TEMPLATE_NAME "Tribrid"
+#define BLYNK_AUTH_TOKEN "B43sEdBSdoqjFpTAeOdlvXHHvKmFphL5"
+
+#define BLYNK_PRINT Serial
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+#include <DHT.h>
+
+char auth[] = BLYNK_AUTH_TOKEN;
+char ssid[] = "madhesh";
+char pass[] = "********";
+
+DHT dht(D3, DHT11);  // D3 -> GPIO0
+BlynkTimer timer;
+
+void DHT11sensor() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  if (isnan(h) || isnan(t)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  if (t >= 60) {
+    digitalWrite(D5, LOW);  // Automatically turn off relay on overheat
+  }
+
+  Blynk.virtualWrite(V0, t);  // Temperature
+  Blynk.virtualWrite(V1, h);  // Humidity
+}
+
+BLYNK_WRITE(V2) {
+  int value = param.asInt();
+  digitalWrite(D5, value ? HIGH : LOW);
+  Serial.println(value ? "Relay 1 ON" : "Relay 1 OFF");
+}
+
+BLYNK_WRITE(V3) {
+  int value = param.asInt();
+  digitalWrite(D6, value ? HIGH : LOW);
+  Serial.println(value ? "Relay 2 ON" : "Relay 2 OFF");
+}
+
+BLYNK_WRITE(V4) {
+  int value = param.asInt();
+  digitalWrite(D7, value ? HIGH : LOW);
+  Serial.println(value ? "Relay 3 ON" : "Relay 3 OFF");
+}
+
+BLYNK_WRITE(V5) {
+  int value = param.asInt();
+  digitalWrite(D8, value ? HIGH : LOW);
+  Serial.println(value ? "Relay 4 ON" : "Relay 4 OFF");
+}
+
+void setup() {
+  Serial.begin(115200);
+  Blynk.begin(auth, ssid, pass);
+  dht.begin();
+
+  pinMode(D5, OUTPUT);
+  pinMode(D6, OUTPUT);
+  pinMode(D7, OUTPUT);
+  pinMode(D8, OUTPUT);
+
+  // Turn all relays off initially
+  digitalWrite(D5, LOW);
+  digitalWrite(D6, LOW);
+  digitalWrite(D7, LOW);
+  digitalWrite(D8, LOW);
+
+  timer.setInterval(2000L, DHT11sensor);  // Read sensor every 2 seconds
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
